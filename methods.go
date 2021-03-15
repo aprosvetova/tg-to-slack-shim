@@ -43,8 +43,11 @@ type getMeResponse struct {
 
 func sendMessage(s *slack.Client, c *gin.Context) interface{} {
 	var req sendMessageRequest
-	err := c.Bind(&req)
-	if err != nil {
+	c.ShouldBindQuery(&req)
+	c.ShouldBind(&req)
+
+	if req.Text == "" {
+		c.AbortWithError(http.StatusBadRequest, errors.New("text must be non-empty"))
 		return nil
 	}
 
@@ -58,7 +61,7 @@ func sendMessage(s *slack.Client, c *gin.Context) interface{} {
 		return nil
 	}
 
-	_, _, err = s.PostMessage(req.ChatID[1:], slack.MsgOptionBlocks(
+	_, _, err := s.PostMessage(req.ChatID[1:], slack.MsgOptionBlocks(
 		slack.NewSectionBlock(
 			slack.NewTextBlockObject(slack.MarkdownType, convertMarkdown(req.Text), false, false),
 			nil, nil,
@@ -72,7 +75,7 @@ func sendMessage(s *slack.Client, c *gin.Context) interface{} {
 }
 
 type sendMessageRequest struct {
-	ChatID    string `json:"chat_id" form:"chat_id" binding:"required"`
-	Text      string `json:"text" form:"text" binding:"required"`
+	ChatID    string `json:"chat_id" form:"chat_id"`
+	Text      string `json:"text" form:"text"`
 	ParseMode string `json:"parse_mode" form:"parse_mode"`
 }
